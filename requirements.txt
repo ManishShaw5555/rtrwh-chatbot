@@ -1,0 +1,9 @@
+faiss-cpu
+sentence-transformers
+pdfplumber  # <--- NEW
+fastapi
+uvicorn
+requests
+streamlit
+numpy
+pydantic
