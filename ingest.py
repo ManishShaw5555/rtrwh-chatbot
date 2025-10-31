@@ -3,7 +3,13 @@ import json
 import re
 from pathlib import Path
 from typing import List
-import pdfplumber  # <--- Import pdfplumber instead of pypdf
+import pdfplumber  # <--- Import pdfplumber
+import logging   # <--- Import logging module
+
+# --- NEW: Suppress pdfminer warnings ---
+# These warnings are common, non-fatal, but flood the console.
+logging.getLogger("pdfminer").setLevel(logging.CRITICAL)
+# --- END NEW ---
 
 DATA_DIR = Path("data")
 OUT_FILE = Path("chunks.json")
@@ -156,15 +162,23 @@ def main():
     DATA_DIR.mkdir(exist_ok=True)
     all_chunks = []
     
+    # --- NEW: Counters ---
+    pdf_count = 0
+    txt_count = 0
+    # --- END NEW ---
+    
     for p in sorted(DATA_DIR.iterdir()):
         if p.suffix.lower() == ".pdf":
             # --- UPDATED CALL ---
             print(f"Extracting tables and text from {p.name}...")
             raw_text = extract_text_from_pdf(p)
+            pdf_count += 1  # <--- Increment PDF counter
         elif p.suffix.lower() in [".txt", ".md"]:
             print(f"Extracting text from {p.name}...")
             raw_text = extract_text_from_txt(p)
+            txt_count += 1  # <--- Increment Txt counter
         else:
+            print(f"Skipping unsupported file: {p.name}")
             continue
         
         # --- NEW STEP ---
@@ -188,11 +202,19 @@ def main():
             })
 
     if not all_chunks:
-        print("No documents found in data/ or content was empty.")
+        print("\nNo documents found in data/ or content was empty.")
         return
 
     OUT_FILE.write_text(json.dumps(all_chunks, ensure_ascii=False, indent=2), encoding="utf-8")
+    
+    # --- NEW: Final Summary ---
+    print("\n---------------------------------")
+    print("Ingestion Complete.")
+    print(f"Processed {pdf_count} PDF file(s).")
+    print(f"Processed {txt_count} Text file(s).")
     print(f"Wrote {len(all_chunks)} chunks to {OUT_FILE}")
+    print("---------------------------------")
+    # --- END NEW ---
 
 if __name__ == "__main__":
     main()
